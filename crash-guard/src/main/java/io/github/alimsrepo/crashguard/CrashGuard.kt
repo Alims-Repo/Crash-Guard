@@ -7,6 +7,7 @@ import io.github.alimsrepo.crashguard.domain.usecase.InstallCrashHandlerUseCase
 import io.github.alimsrepo.crashguard.data.repository.CrashRepositoryImpl
 import io.github.alimsrepo.crashguard.data.storage.CrashLogStorage
 import io.github.alimsrepo.crashguard.domain.handler.CrashExceptionHandler
+import io.github.alimsrepo.crashguard.domain.model.CrashData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

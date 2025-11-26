@@ -2,8 +2,8 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.alims-repo/crash-guard)](https://central.sonatype.com/artifact/io.github.alims-repo/crash-guard)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Android API](https://img.shields.io/badge/API-21%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=21)
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![Android API](https://img.shields.io/badge/API-22%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=21)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-blue.svg?logo=kotlin)](http://kotlinlang.org)
 
 **CrashGuard** is an industry-grade Android library that provides beautiful, customizable crash screens for your applications. Built with Clean Architecture principles, it offers extensive configuration options for both debug and release builds, crash log management, and seamless integration with analytics platforms.
 
