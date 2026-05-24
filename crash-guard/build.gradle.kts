@@ -1,4 +1,6 @@
 import com.vanniktech.maven.publish.SonatypeHost
+import java.util.Base64
+import org.gradle.plugins.signing.Sign
 
 plugins {
     alias(libs.plugins.android.library)
@@ -90,17 +92,36 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 }
 
-// Read signing credentials from ~/.gradle/gradle.properties
-// Keys: signingInMemoryKeyId, signingInMemoryKey, signingInMemoryKeyPassword
+// Read signing credentials from project properties / environment variables.
+// In CI, pass the ASCII-armored private key as base64 via ORG_GRADLE_PROJECT_signingInMemoryKeyBase64
+// to avoid multi-line environment variable corruption.  Locally you can still use
+// signingInMemoryKey (plain armored text) in ~/.gradle/gradle.properties.
 val signingKeyId = findProperty("signingInMemoryKeyId") as String?
-val signingKey = findProperty("signingInMemoryKey") as String?
 val signingPassword = findProperty("signingInMemoryKeyPassword") as String? ?: ""
 
+// Prefer the base64-encoded form (CI-safe); fall back to plain armored key (local dev)
+val signingKey: String? = run {
+    val b64 = findProperty("signingInMemoryKeyBase64") as String?
+    if (b64 != null) {
+        String(Base64.getDecoder().decode(b64.trim()))
+    } else {
+        findProperty("signingInMemoryKey") as String?
+    }
+}
+
 signing {
+    isRequired = signingKey != null
     if (signingKey != null) {
         useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
         sign(publishing.publications)
     } else {
-        logger.warn("⚠️  signingInMemoryKey not set — publications will NOT be signed.")
+        logger.warn("⚠️  signingInMemoryKey / signingInMemoryKeyBase64 not set — publications will NOT be signed.")
     }
 }
+
+// Ensure Sign tasks are gracefully skipped when no key is present
+// (e.g. during local builds or doc-only runs on CI)
+tasks.withType<Sign>().configureEach {
+    onlyIf("signing key is configured") { signingKey != null }
+}
+
