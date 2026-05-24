@@ -13,5 +13,5 @@ interface CrashRepository {
     suspend fun deleteCrash(id: String): Result<Unit>
     suspend fun deleteAllCrashes(): Result<Unit>
     suspend fun getCrashCount(): Result<Int>
-    fun getLastCrash(): Result<CrashData?>
+    suspend fun getLastCrash(): Result<CrashData?>
 }
