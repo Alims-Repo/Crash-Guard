@@ -1,7 +1,7 @@
 package io.github.alimsrepo.crashguard.domain.config
 
 import android.app.Application
-import android.content.Context
+import androidx.appcompat.app.AppCompatActivity
 import io.github.alimsrepo.crashguard.domain.model.CrashData
 import io.github.alimsrepo.crashguard.presentation.ui.developer.DeveloperCrashActivity
 import io.github.alimsrepo.crashguard.presentation.ui.user.UserCrashActivity
@@ -18,8 +18,8 @@ data class CrashGuardConfig internal constructor(
     val enableLogging: Boolean,
     val enableCrashReporting: Boolean,
     val maxCrashLogs: Int,
-    val customUserActivity: KClass<*>?,
-    val customDeveloperActivity: KClass<*>?,
+    val customUserActivity: KClass<out AppCompatActivity>?,
+    val customDeveloperActivity: KClass<out AppCompatActivity>?,
     val crashInterceptor: CrashInterceptor?,
     val logStoragePath: String?,
     val enableAutoRestart: Boolean,
@@ -45,8 +45,8 @@ data class CrashGuardConfig internal constructor(
         private var enableLogging: Boolean = true
         private var enableCrashReporting: Boolean = true
         private var maxCrashLogs: Int = 50
-        private var customUserActivity: KClass<*>? = null
-        private var customDeveloperActivity: KClass<*>? = null
+        private var customUserActivity: KClass<out AppCompatActivity>? = null
+        private var customDeveloperActivity: KClass<out AppCompatActivity>? = null
         private var crashInterceptor: CrashInterceptor? = null
         private var logStoragePath: String? = null
         private var enableAutoRestart: Boolean = false
@@ -86,12 +86,12 @@ data class CrashGuardConfig internal constructor(
         /**
          * Set custom user crash activity
          */
-        fun customUserActivity(activity: KClass<*>) = apply { this.customUserActivity = activity }
+        fun customUserActivity(activity: KClass<out AppCompatActivity>) = apply { this.customUserActivity = activity }
 
         /**
          * Set custom developer crash activity
          */
-        fun customDeveloperActivity(activity: KClass<*>) = apply { this.customDeveloperActivity = activity }
+        fun customDeveloperActivity(activity: KClass<out AppCompatActivity>) = apply { this.customDeveloperActivity = activity }
 
         /**
          * Set crash interceptor for pre-processing
@@ -169,6 +169,7 @@ data class CrashGuardConfig internal constructor(
          * Build the configuration
          */
         fun build(): CrashGuardConfig {
+            require(maxCrashLogs > 0) { "maxCrashLogs must be greater than 0 (was $maxCrashLogs)" }
             return CrashGuardConfig(
                 application = application,
                 isDebugMode = isDebugMode,
@@ -196,8 +197,8 @@ data class CrashGuardConfig internal constructor(
         }
     }
 
-    fun getUserActivityClass() = customUserActivity ?: UserCrashActivity::class
-    fun getDeveloperActivityClass() = customDeveloperActivity ?: DeveloperCrashActivity::class
+    fun getUserActivityClass(): KClass<out AppCompatActivity> = customUserActivity ?: UserCrashActivity::class
+    fun getDeveloperActivityClass(): KClass<out AppCompatActivity> = customDeveloperActivity ?: DeveloperCrashActivity::class
 
-    fun getActivityClass() = if (isDebugMode) getDeveloperActivityClass() else getUserActivityClass()
+    fun getActivityClass(): KClass<out AppCompatActivity> = if (isDebugMode) getDeveloperActivityClass() else getUserActivityClass()
 }
