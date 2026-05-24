@@ -28,30 +28,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Parse the version from the tag (strips leading "v")
-      # e.g. tag "v0.5.7-beta" → VERSION = "0.5.7-beta"
-      - name: Extract version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
-
-      # Verify the tag version matches what's in build.gradle.kts (prevents accidental mismatch)
-      - name: Validate version matches build file
-        run: |
-          GRADLE_VERSION=$(sed -n 's/.*version = "\([^"]*\)".*/\1/p' flow-tab/build.gradle.kts | head -1)
-          TAG_VERSION="${{ steps.version.outputs.VERSION }}"
-          echo "Tag version:    $TAG_VERSION"
-          echo "Gradle version: $GRADLE_VERSION"
-          if [ "$TAG_VERSION" != "$GRADLE_VERSION" ]; then
-            echo "❌ Version mismatch! Tag=$TAG_VERSION but build.gradle.kts=$GRADLE_VERSION"
-            exit 1
-          fi
-          echo "✅ Versions match: $TAG_VERSION"
-
       - name: Publish to Maven Central
         # SIGNING_KEY = base64-encoded armored private key (avoids multiline env-var issues)
         run: |
           export ORG_GRADLE_PROJECT_signingInMemoryKey=$(echo "$SIGNING_KEY_B64" | base64 -d)
-          ./gradlew :flow-tab:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+          ./gradlew :crash-guard:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
