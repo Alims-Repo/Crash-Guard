@@ -1,6 +1,5 @@
 package io.github.alimsrepo.crashguard.domain.model
 
-import android.os.Build
 import java.io.PrintWriter
 import java.io.Serializable
 import java.io.StringWriter
@@ -8,11 +7,17 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Domain model representing crash data
+ * Domain model representing crash data.
+ * Exception info (type, message, stack trace) is stored eagerly as strings so that
+ * the model is safely serializable even when the original Throwable is not.
  */
 data class CrashData(
     val id: String = UUID.randomUUID().toString(),
-    val exception: Throwable,
+    /** Retained in-memory only; excluded from Java serialization via @Transient. */
+    @Transient val exception: Throwable? = null,
+    val exceptionType: String,
+    val exceptionMessage: String,
+    val stackTrace: String,
     val threadName: String,
     val timestamp: Long = System.currentTimeMillis(),
     val appVersion: String,
@@ -28,36 +33,6 @@ data class CrashData(
     val networkType: String = "Unknown",
     val orientation: String = "Unknown"
 ) : Serializable {
-
-    val exceptionType: String
-        get() = exception.javaClass.name
-
-    val exceptionMessage: String
-        get() = exception.message ?: "No message"
-
-    val stackTrace: String
-        get() {
-            return try {
-                val sw = StringWriter()
-                val pw = PrintWriter(sw)
-                exception.printStackTrace(pw)
-                pw.flush()
-                sw.toString()
-            } catch (e: Exception) {
-                // Fallback if printStackTrace fails
-                buildString {
-                    appendLine("Exception: ${exception.javaClass.name}")
-                    appendLine("Message: ${exception.message ?: "No message"}")
-                    appendLine()
-                    appendLine("Stack trace generation failed: ${e.message}")
-                    appendLine()
-                    appendLine("Basic stack trace:")
-                    exception.stackTrace?.forEach { element ->
-                        appendLine("  at $element")
-                    }
-                }
-            }
-        }
 
     val formattedTimestamp: String
         get() {
@@ -121,23 +96,59 @@ data class CrashData(
     }
 
     fun toJson(): String {
-        // Simple JSON serialization (can be replaced with Gson/Moshi)
+        fun String.escapeJson() = replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
+
+        val customDataJson = customData.entries.joinToString(",\n") { (k, v) ->
+            "  \"${k.escapeJson()}\": \"${v.escapeJson()}\""
+        }
+        val activityStackJson = activityStack.joinToString(", ") { "\"${it.escapeJson()}\"" }
+
         return """
             {
                 "id": "$id",
                 "timestamp": $timestamp,
-                "exceptionType": "$exceptionType",
-                "exceptionMessage": "${exceptionMessage.replace("\"", "\\\"")}",
-                "threadName": "$threadName",
-                "appVersion": "$appVersion",
-                "appPackage": "$appPackage",
-                "deviceInfo": ${deviceInfo.toJson()},
+                "exceptionType": "${exceptionType.escapeJson()}",
+                "exceptionMessage": "${exceptionMessage.escapeJson()}",
+                "stackTrace": "${stackTrace.escapeJson()}",
+                "threadName": "${threadName.escapeJson()}",
+                "appVersion": "${appVersion.escapeJson()}",
+                "appPackage": "${appPackage.escapeJson()}",
                 "availableMemory": $availableMemory,
                 "totalMemory": $totalMemory,
+                "diskSpace": $diskSpace,
                 "batteryLevel": $batteryLevel,
                 "isCharging": $isCharging,
-                "networkType": "$networkType"
+                "networkType": "${networkType.escapeJson()}",
+                "orientation": "${orientation.escapeJson()}",
+                "activityStack": [$activityStackJson],
+                "customData": {
+$customDataJson
+                },
+                "deviceInfo": ${deviceInfo.toJson()}
             }
         """.trimIndent()
+    }
+
+    companion object {
+        /** Helper to convert a Throwable to a stack-trace string safely. */
+        fun stackTraceOf(throwable: Throwable): String {
+            return try {
+                val sw = StringWriter()
+                throwable.printStackTrace(PrintWriter(sw))
+                sw.toString()
+            } catch (e: Exception) {
+                buildString {
+                    appendLine("Exception: ${throwable.javaClass.name}")
+                    appendLine("Message: ${throwable.message ?: "No message"}")
+                    appendLine()
+                    appendLine("Stack trace generation failed: ${e.message}")
+                    throwable.stackTrace.forEach { appendLine("  at $it") }
+                }
+            }
+        }
     }
 }

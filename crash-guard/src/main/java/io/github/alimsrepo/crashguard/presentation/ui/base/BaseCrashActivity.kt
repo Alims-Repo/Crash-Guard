@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import io.github.alimsrepo.crashguard.CrashGuard
 import io.github.alimsrepo.crashguard.domain.model.CrashData
@@ -39,6 +40,14 @@ abstract class BaseCrashActivity : AppCompatActivity() {
             finish()
             return
         }
+
+        // Prevent returning to the crashed app state.
+        // onBackPressed() is deprecated from API 33 — use OnBackPressedDispatcher instead.
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (config.enableAutoRestart) restartApp() else closeApp()
+            }
+        })
 
         setupUI()
     }
@@ -116,14 +125,5 @@ abstract class BaseCrashActivity : AppCompatActivity() {
     protected fun closeApp() {
         finish()
         android.os.Process.killProcess(android.os.Process.myPid())
-    }
-
-    override fun onBackPressed() {
-        // Prevent going back to crashed state
-        if (config.enableAutoRestart) {
-            restartApp()
-        } else {
-            closeApp()
-        }
     }
 }

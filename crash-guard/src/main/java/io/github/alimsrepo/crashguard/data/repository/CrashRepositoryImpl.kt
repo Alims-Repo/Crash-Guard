@@ -67,8 +67,8 @@ class CrashRepositoryImpl(
         }
     }
 
-    override fun getLastCrash(): Result<CrashData?> {
-        return try {
+    override suspend fun getLastCrash(): Result<CrashData?> = withContext(Dispatchers.IO) {
+        try {
             val crash = storage.getLastCrash()
             Result.success(crash)
         } catch (e: Exception) {

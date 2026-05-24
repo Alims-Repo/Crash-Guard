@@ -1,0 +1,8 @@
+title: CrashGuard
+description: Industry-grade Android crash handling library with customizable crash screens, persistent logging, and clean architecture.
+url: "https://alims-repo.github.io"
+baseurl: "/crash-guard"
+theme: minima
+plugins:
+  - jekyll-seo-tag
+

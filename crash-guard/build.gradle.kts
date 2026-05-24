@@ -2,15 +2,15 @@ import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
 
-    id("com.vanniktech.maven.publish") version "0.28.0"
+    id("com.vanniktech.maven.publish") version "0.30.0"
+    id("signing")
 }
 
 android {
     namespace = "io.github.alimsrepo.crashguard"
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     defaultConfig {
@@ -33,8 +33,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
 }
 
@@ -44,6 +46,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -53,7 +56,7 @@ mavenPublishing {
     coordinates(
         groupId = "io.github.alims-repo",
         artifactId = "crash-guard",
-        version = "1.0.0"
+        version = "1.0.2"
     )
 
     pom {
@@ -85,6 +88,19 @@ mavenPublishing {
     }
 
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+}
 
-    signAllPublications()
+// Read signing credentials from ~/.gradle/gradle.properties
+// Keys: signingInMemoryKeyId, signingInMemoryKey, signingInMemoryKeyPassword
+val signingKeyId = findProperty("signingInMemoryKeyId") as String?
+val signingKey = findProperty("signingInMemoryKey") as String?
+val signingPassword = findProperty("signingInMemoryKeyPassword") as String? ?: ""
+
+signing {
+    if (signingKey != null) {
+        useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+        sign(publishing.publications)
+    } else {
+        logger.warn("⚠️  signingInMemoryKey not set — publications will NOT be signed.")
+    }
 }
