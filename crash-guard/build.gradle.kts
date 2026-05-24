@@ -2,7 +2,6 @@ import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
 
     id("com.vanniktech.maven.publish") version "0.30.0"
     id("signing")
