@@ -102,11 +102,12 @@ class CrashLogStorage(
     }
 
     /**
-     * Delete all crash logs
+     * Delete all crash logs (only .crash and .txt files — leaves other files untouched).
      */
     fun deleteAllCrashes() {
         try {
-            storageDir.listFiles()?.forEach { it.delete() }
+            storageDir.listFiles { file -> file.extension == "crash" || file.extension == "txt" }
+                ?.forEach { it.delete() }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -179,11 +180,13 @@ class CrashLogStorage(
             ?.sortedBy { it.lastModified() }
             ?: return
 
-        val excessCount = files.size - config.maxCrashLogs
+        // Delete enough old files so that after the new one is saved we stay within the limit.
+        // Without the +1 offset, when files.size == maxCrashLogs nothing was deleted here,
+        // then the new file was saved, leaving maxCrashLogs+1 files stored permanently.
+        val excessCount = files.size - config.maxCrashLogs + 1
         if (excessCount > 0) {
             files.take(excessCount).forEach { file ->
                 file.delete()
-                // Delete corresponding text file
                 File(storageDir, "${file.nameWithoutExtension}.txt").delete()
             }
         }
