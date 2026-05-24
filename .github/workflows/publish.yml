@@ -29,12 +29,12 @@ jobs:
         run: chmod +x gradlew
 
       - name: Publish to Maven Central
-        # SIGNING_KEY secret must be the ASCII-armored private key encoded as base64.
-        # Passing it as base64 avoids multi-line env-var corruption; Gradle decodes it internally.
-        run: ./gradlew :crash-guard:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+        # SIGNING_KEY = base64-encoded armored private key (avoids multiline env-var issues)
+        run: |
+          export ORG_GRADLE_PROJECT_signingInMemoryKey=$(echo "$SIGNING_KEY_B64" | base64 -d)
+          ./gradlew :crash-guard:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyBase64: ${{ secrets.SIGNING_KEY }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_KEY_B64: ${{ secrets.SIGNING_KEY }}
