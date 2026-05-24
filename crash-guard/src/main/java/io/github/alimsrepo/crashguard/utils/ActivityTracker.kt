@@ -8,8 +8,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * Tracks the live Activity back-stack using [Application.ActivityLifecycleCallbacks].
  *
- * Register once via [Application.registerActivityLifecycleCallbacks] in [CrashGuard.install].
- * The collected stack is read by [CrashExceptionHandler] at crash time, replacing the
+ * Register once via `Application.registerActivityLifecycleCallbacks` in `CrashGuard.install`.
+ * The collected stack is read by `CrashExceptionHandler` at crash time, replacing the
  * deprecated and restricted [android.app.ActivityManager.getRunningTasks] API.
  */
 object ActivityTracker : Application.ActivityLifecycleCallbacks {
@@ -34,4 +34,5 @@ object ActivityTracker : Application.ActivityLifecycleCallbacks {
     override fun onActivityStopped(activity: Activity) = Unit
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
 }
+
 

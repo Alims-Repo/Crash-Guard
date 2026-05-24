@@ -40,6 +40,7 @@ data class CrashGuardConfig internal constructor(
     /**
      * Builder for CrashGuardConfig with fluent API
      */
+    @Suppress("unused") // All builder methods are public API for library consumers
     class Builder(private val application: Application) {
         private var isDebugMode: Boolean = false
         private var enableLogging: Boolean = true

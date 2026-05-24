@@ -1,6 +1,5 @@
 package io.github.alimsrepo.crashguard.domain.model
 
-import android.os.Build
 import java.io.PrintWriter
 import java.io.Serializable
 import java.io.StringWriter
@@ -147,7 +146,7 @@ $customDataJson
                     appendLine("Message: ${throwable.message ?: "No message"}")
                     appendLine()
                     appendLine("Stack trace generation failed: ${e.message}")
-                    throwable.stackTrace?.forEach { appendLine("  at $it") }
+                    throwable.stackTrace.forEach { appendLine("  at $it") }
                 }
             }
         }
