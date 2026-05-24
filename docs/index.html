@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrashGuard — Android Crash Handling Library</title>
+  <meta name="description" content="Industry-grade Android crash handling library with customizable crash screens, persistent logging, and clean architecture." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:          #0d1117;
+      --bg-card:     #161b22;
+      --bg-code:     #0d1117;
+      --border:      #30363d;
+      --accent:      #e84144;
+      --accent-dim:  #f8878920;
+      --text:        #e6edf3;
+      --text-muted:  #8b949e;
+      --keyword:     #ff7b72;
+      --string:      #a5d6ff;
+      --comment:     #545d68;
+      --type:        #ffa657;
+      --fn:          #d2a8ff;
+      --number:      #79c0ff;
+      --nav-w:       260px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; left: 0; top: 0; bottom: 0; width: var(--nav-w);
+      background: var(--bg-card); border-right: 1px solid var(--border);
+      overflow-y: auto; padding: 28px 0; z-index: 100;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 22px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+    }
+    .nav-logo .shield {
+      width: 36px; height: 36px; background: var(--accent); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+    }
+    .nav-logo span { font-weight: 700; font-size: 17px; }
+    .nav-logo small { display: block; color: var(--text-muted); font-size: 11px; font-weight: 400; }
+    nav a {
+      display: block; padding: 7px 22px; color: var(--text-muted); text-decoration: none;
+      font-size: 13.5px; transition: color .15s, background .15s; border-radius: 0;
+    }
+    nav a:hover, nav a.active { color: var(--text); background: var(--accent-dim); }
+    .nav-section {
+      padding: 16px 22px 6px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted);
+    }
+
+    /* ── Main ── */
+    main { margin-left: var(--nav-w); max-width: 860px; padding: 64px 52px 120px; }
+    @media (max-width: 900px) {
+      nav { display: none; }
+      main { margin-left: 0; padding: 32px 20px 80px; }
+    }
+
+    /* ── Hero ── */
+    .hero { margin-bottom: 64px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent-dim); border: 1px solid var(--accent);
+      color: var(--accent); padding: 4px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; margin-bottom: 20px;
+    }
+    h1 { font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+    h1 span { color: var(--accent); }
+    .hero-sub { font-size: 17px; color: var(--text-muted); max-width: 600px; margin-bottom: 28px; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; }
+    .badge-row img { height: 20px; }
+    .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      text-decoration: none; transition: opacity .15s, transform .1s;
+    }
+    .btn:hover { opacity: .85; transform: translateY(-1px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); }
+
+    /* ── Feature grid ── */
+    .features {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px; margin: 32px 0;
+    }
+    .feature {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .feature-icon { font-size: 24px; margin-bottom: 10px; }
+    .feature h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .feature p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── Sections ── */
+    section { margin-top: 64px; }
+    h2 {
+      font-size: 1.6rem; font-weight: 700; margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; font-weight: 600; margin: 28px 0 10px; }
+    h4 { font-size: .95rem; font-weight: 600; margin: 20px 0 8px; color: var(--type); }
+    p { color: var(--text-muted); margin-bottom: 14px; }
+    p strong { color: var(--text); }
+    ul, ol { color: var(--text-muted); padding-left: 22px; margin-bottom: 14px; }
+    li { margin-bottom: 6px; font-size: 14.5px; }
+    li strong { color: var(--text); }
+    a { color: var(--number); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Code ── */
+    pre {
+      background: var(--bg-code); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px 22px; overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+      line-height: 1.65; margin: 14px 0 24px; position: relative;
+    }
+    code { font-family: 'JetBrains Mono', monospace; }
+    p code, li code {
+      background: #1c2128; border: 1px solid var(--border); padding: 2px 6px;
+      border-radius: 4px; font-size: 12.5px; color: var(--type);
+    }
+    .lang-tag {
+      position: absolute; top: 10px; right: 14px;
+      font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: .05em; font-family: 'Inter', sans-serif;
+    }
+
+    /* Syntax */
+    .kw  { color: var(--keyword); }
+    .str { color: var(--string); }
+    .cm  { color: var(--comment); font-style: italic; }
+    .ty  { color: var(--type); }
+    .fn  { color: var(--fn); }
+    .nu  { color: var(--number); }
+    .pl  { color: #79c0ff; }        /* plain blue */
+    .gr  { color: #3fb950; }        /* green (gradle block) */
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 16px 0 24px; }
+    th { text-align: left; padding: 10px 14px; background: var(--bg-card); color: var(--text); font-weight: 600; font-size: 12px; border-bottom: 1px solid var(--border); }
+    td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--text-muted); vertical-align: top; }
+    td code { font-size: 12px; }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Callout ── */
+    .callout {
+      border-left: 3px solid var(--accent); background: var(--accent-dim);
+      padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0;
+      font-size: 13.5px; color: var(--text-muted);
+    }
+    .callout strong { color: var(--text); }
+
+    /* ── Step list ── */
+    .steps { counter-reset: step; }
+    .step { display: flex; gap: 16px; margin-bottom: 28px; }
+    .step-num {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--accent);
+      color: #fff; font-weight: 700; font-size: 14px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step-body { flex: 1; }
+    .step-body h4 { margin-top: 4px; color: var(--text); }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border);
+      color: var(--text-muted); font-size: 13px; text-align: center;
+    }
+    footer a { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR NAV ─────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">
+    <div class="shield">🛡️</div>
+    <div>
+      <span>CrashGuard</span>
+      <small>v1.0.1</small>
+    </div>
+  </div>
+
+  <div class="nav-section">Getting Started</div>
+  <a href="#overview">Overview</a>
+  <a href="#installation">Installation</a>
+  <a href="#quickstart">Quick Start</a>
+
+  <div class="nav-section">Configuration</div>
+  <a href="#configuration">Builder API</a>
+  <a href="#callbacks">Callbacks</a>
+  <a href="#interceptor">Crash Interceptor</a>
+  <a href="#exclude">Excluding Exceptions</a>
+
+  <div class="nav-section">Crash Screens</div>
+  <a href="#screens">Built-in Screens</a>
+  <a href="#custom-screen">Custom Screen</a>
+
+  <div class="nav-section">Advanced</div>
+  <a href="#history">Crash History</a>
+  <a href="#analytics">Analytics</a>
+  <a href="#secure">Secure Mode</a>
+  <a href="#testing">Testing</a>
+  <a href="#proguard">ProGuard / R8</a>
+
+  <div class="nav-section">Reference</div>
+  <a href="#crashdata">CrashData</a>
+  <a href="#license">License</a>
+</nav>
+
+<!-- ─── MAIN CONTENT ───────────────────────────────────────────────── -->
+<main>
+
+  <!-- Hero -->
+  <div class="hero" id="overview">
+    <div class="hero-badge">🛡️ Android Library</div>
+    <h1>Crash<span>Guard</span></h1>
+    <p class="hero-sub">
+      Industry-grade crash handling for Android. Customizable crash screens, persistent
+      log storage, analytics hooks, and clean-architecture internals — all in one
+      zero-boilerplate library.
+    </p>
+    <div class="badge-row">
+      <img src="https://img.shields.io/maven-central/v/io.github.alims-repo/crash-guard?style=flat-square&color=e84144" alt="Maven Central" />
+      <img src="https://img.shields.io/badge/API-22%2B-brightgreen?style=flat-square" alt="API 22+" />
+      <img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square" alt="Apache 2.0" />
+      <img src="https://img.shields.io/badge/Kotlin-2.x-7f52ff?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin" />
+    </div>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#quickstart">Quick Start</a>
+      <a class="btn btn-secondary" href="https://github.com/Alims-Repo/crash-guard">GitHub →</a>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">💥</div>
+      <h3>Smart Crash Screens</h3>
+      <p>Separate debug (full stack trace) and user-facing (friendly message) screens, fully replaceable.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">💾</div>
+      <h3>Persistent Logging</h3>
+      <p>Crash reports are stored on-device as serialized files and queryable via use-case APIs.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔌</div>
+      <h3>Analytics Hooks</h3>
+      <p>Plug in your own Firebase / Sentry / Datadog provider with a single interface.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔒</div>
+      <h3>Secure Mode</h3>
+      <p>Automatically redacts emails, credit-card numbers, SSNs and phone numbers from reports.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🏗️</div>
+      <h3>Clean Architecture</h3>
+      <p>Domain/data layers, repository pattern, and use cases — no god class, fully testable.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">⚙️</div>
+      <h3>Fluent Builder</h3>
+      <p>Every behaviour is opt-in via a readable builder. Sane defaults out of the box.</p>
+    </div>
+  </div>
+
+  <!-- ─── INSTALLATION ──────────────────────────────────────────────── -->
+  <section id="installation">
+    <h2>Installation</h2>
+    <p>CrashGuard is published on <strong>Maven Central</strong>. Add the dependency to your app module:</p>
+
+    <h3>Kotlin DSL (<code>build.gradle.kts</code>)</h3>
+    <pre><span class="lang-tag">kts</span><span class="fn">dependencies</span> {
+    <span class="fn">implementation</span>(<span class="str">"io.github.alims-repo:crash-guard:1.0.1"</span>)
+}</pre>
+
+    <h3>Groovy (<code>build.gradle</code>)</h3>
+    <pre><span class="lang-tag">groovy</span><span class="fn">dependencies</span> {
+    implementation <span class="str">"io.github.alims-repo:crash-guard:1.0.1"</span>
+}</pre>
+
+    <p><strong>Minimum SDK:</strong> API 22 · <strong>Compile SDK:</strong> 37</p>
+    <div class="callout">
+      <strong>androidx.activity</strong> is a transitive dependency. Make sure
+      <code>android.useAndroidX=true</code> is set in your <code>gradle.properties</code>.
+    </div>
+  </section>
+
+  <!-- ─── QUICK START ───────────────────────────────────────────────── -->
+  <section id="quickstart">
+    <h2>Quick Start</h2>
+    <p>Two lines in your <code>Application</code> class are all you need:</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Initialize in Application.onCreate()</h4>
+          <pre><span class="lang-tag">kotlin</span><span class="kw">class</span> <span class="ty">MyApp</span> : <span class="ty">Application</span>() {
+
+    <span class="kw">override fun</span> <span class="fn">onCreate</span>() {
+        <span class="kw">super</span>.<span class="fn">onCreate</span>()
+
+        <span class="ty">CrashGuard</span>.<span class="fn">install</span>(
+            application = <span class="kw">this</span>,
+            config = <span class="ty">CrashGuardConfig</span>.<span class="ty">Builder</span>(<span class="kw">this</span>)
+                .<span class="fn">debugMode</span>(<span class="ty">BuildConfig</span>.DEBUG)  <span class="cm">// developer screen in debug builds</span>
+                .<span class="fn">build</span>()
+        )
+    }
+}</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Register in AndroidManifest (already handled)</h4>
+          <p>The library's <code>AndroidManifest.xml</code> declares both crash activities automatically
+          via manifest merge — no extra entries needed.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Done! 🎉</h4>
+          <p>CrashGuard now intercepts all uncaught exceptions. In <strong>debug</strong> builds it shows
+          a full-detail developer screen; in <strong>release</strong> builds it shows a friendly user
+          screen.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CONFIGURATION ─────────────────────────────────────────────── -->
+  <section id="configuration">
+    <h2>Builder API</h2>
+    <p>All settings are optional — use only what you need.</p>
+
+    <pre><span class="lang-tag">kotlin</span><span class="ty">CrashGuard</span>.<span class="fn">install</span>(
+    application = <span class="kw">this</span>,
+    config = <span class="ty">CrashGuardConfig</span>.<span class="ty">Builder</span>(<span class="kw">this</span>)
+
+        <span class="cm">// ── Modes ────────────────────────────────────────────────────────</span>
+        .<span class="fn">debugMode</span>(<span class="ty">BuildConfig</span>.DEBUG)       <span class="cm">// true → DeveloperCrashActivity</span>
+        .<span class="fn">enableLogging</span>(<span class="kw">true</span>)               <span class="cm">// persist crashes to device storage</span>
+        .<span class="fn">maxCrashLogs</span>(<span class="nu">50</span>)                  <span class="cm">// max stored crash files (default 50)</span>
+
+        <span class="cm">// ── Custom screens ───────────────────────────────────────────────</span>
+        .<span class="fn">customUserActivity</span>(<span class="ty">MyCrashActivity</span>::<span class="kw">class</span>)
+        .<span class="fn">customDeveloperActivity</span>(<span class="ty">MyDevCrashActivity</span>::<span class="kw">class</span>)
+
+        <span class="cm">// ── Auto restart ─────────────────────────────────────────────────</span>
+        .<span class="fn">enableAutoRestart</span>(<span class="kw">true</span>, delayMs = <span class="nu">1500L</span>)
+
+        <span class="cm">// ── Analytics ────────────────────────────────────────────────────</span>
+        .<span class="fn">enableAnalytics</span>(<span class="kw">true</span>, provider = <span class="ty">MyAnalyticsProvider</span>())
+
+        <span class="cm">// ── Secure mode (redacts PII) ────────────────────────────────────</span>
+        .<span class="fn">enableSecureMode</span>(<span class="kw">true</span>)
+
+        <span class="cm">// ── Custom context data ──────────────────────────────────────────</span>
+        .<span class="fn">customDataProvider</span>(<span class="ty">MyDataProvider</span>())
+
+        <span class="cm">// ── Crash interceptor ────────────────────────────────────────────</span>
+        .<span class="fn">crashInterceptor</span>(<span class="ty">MyCrashInterceptor</span>())
+
+        <span class="cm">// ── Exception filter ─────────────────────────────────────────────</span>
+        .<span class="fn">excludeException</span>(<span class="ty">IllegalArgumentException</span>::<span class="kw">class</span>)
+
+        <span class="cm">// ── Storage path (default: filesDir/crash_logs) ──────────────────</span>
+        .<span class="fn">logStoragePath</span>(<span class="str">"/custom/path"</span>)
+
+        .<span class="fn">build</span>()
+)</pre>
+
+    <h3>Full Reference</h3>
+    <table>
+      <tr><th>Method</th><th>Default</th><th>Description</th></tr>
+      <tr><td><code>debugMode(Boolean)</code></td><td><code>false</code></td><td>Show detailed developer screen instead of the user-facing screen.</td></tr>
+      <tr><td><code>enableLogging(Boolean)</code></td><td><code>true</code></td><td>Persist crash data to device storage as serialized files.</td></tr>
+      <tr><td><code>maxCrashLogs(Int)</code></td><td><code>50</code></td><td>Maximum number of crash files kept on disk. Oldest are pruned. Must be &gt; 0.</td></tr>
+      <tr><td><code>customUserActivity(KClass)</code></td><td>built-in</td><td>Replace the user-facing crash screen with your own AppCompatActivity.</td></tr>
+      <tr><td><code>customDeveloperActivity(KClass)</code></td><td>built-in</td><td>Replace the developer crash screen with your own AppCompatActivity.</td></tr>
+      <tr><td><code>enableAutoRestart(Boolean, delayMs)</code></td><td><code>false</code>, 1 s</td><td>Automatically restart the app after the crash screen is shown.</td></tr>
+      <tr><td><code>showNotification(Boolean, NotificationConfig?)</code></td><td><code>false</code></td><td>Post a system notification when a crash is captured.</td></tr>
+      <tr><td><code>enableAnalytics(Boolean, AnalyticsProvider?)</code></td><td><code>false</code></td><td>Forward crash events to a custom analytics provider.</td></tr>
+      <tr><td><code>enableSecureMode(Boolean)</code></td><td><code>false</code></td><td>Redact emails, card numbers, SSNs and phone numbers from all string data.</td></tr>
+      <tr><td><code>customDataProvider(CustomDataProvider)</code></td><td><code>null</code></td><td>Attach additional key-value pairs to every crash report.</td></tr>
+      <tr><td><code>crashInterceptor(CrashInterceptor)</code></td><td><code>null</code></td><td>Pre-process crashes; returning <code>true</code> suppresses the CrashGuard screen.</td></tr>
+      <tr><td><code>excludeException(KClass&lt;Throwable&gt;)</code></td><td>none</td><td>Pass matching exceptions to the default handler instead of CrashGuard.</td></tr>
+      <tr><td><code>logStoragePath(String)</code></td><td><code>filesDir/crash_logs</code></td><td>Override the directory where <code>.crash</code> files are stored.</td></tr>
+    </table>
+  </section>
+
+  <!-- ─── CALLBACKS ─────────────────────────────────────────────────── -->
+  <section id="callbacks">
+    <h2>Callbacks</h2>
+    <p>Four lifecycle callbacks let you react to crash events without coupling to library internals.</p>
+
+    <pre><span class="lang-tag">kotlin</span><span class="ty">CrashGuardConfig</span>.<span class="ty">Builder</span>(<span class="kw">this</span>)
+
+    <span class="cm">// Fired immediately when a crash is captured.</span>
+    .<span class="fn">onCrashDetected</span> { crashData ->
+        <span class="ty">Log</span>.<span class="fn">e</span>(<span class="str">"App"</span>, <span class="str">"Crash: ${crashData.exceptionType}"</span>)
+    }
+
+    <span class="cm">// Fired before the crash screen is shown.</span>
+    <span class="cm">// Return false to suppress the screen entirely.</span>
+    .<span class="fn">onBeforeCrashScreen</span> { crashData ->
+        <span class="kw">val</span> shouldShow = crashData.exceptionType != <span class="str">"java.lang.OutOfMemoryError"</span>
+        shouldShow
+    }
+
+    <span class="cm">// Fired after the crash flow completes (just before killProcess).</span>
+    .<span class="fn">onAfterCrashScreen</span> { crashData ->
+        <span class="cm">// Upload report, flush logs, etc.</span>
+        uploadCrashReport(crashData)
+    }
+
+    <span class="cm">// Fired once, when CrashGuard.install() completes successfully.</span>
+    .<span class="fn">onInitialized</span> {
+        <span class="ty">Log</span>.<span class="fn">d</span>(<span class="str">"App"</span>, <span class="str">"CrashGuard is active"</span>)
+    }
+
+    .<span class="fn">build</span>()</pre>
+  </section>
+
+  <!-- ─── INTERCEPTOR ───────────────────────────────────────────────── -->
+  <section id="interceptor">
+    <h2>Crash Interceptor</h2>
+    <p>
+      Implement <code>CrashInterceptor</code> to pre-process crashes. Returning <code>true</code>
+      lets CrashGuard know you have handled the crash; it then forwards to the default system handler
+      and returns without showing the crash screen.
+    </p>
+
+    <pre><span class="lang-tag">kotlin</span><span class="kw">class</span> <span class="ty">MyCrashInterceptor</span> : <span class="ty">CrashInterceptor</span> {
+    <span class="kw">override fun</span> <span class="fn">onCrashIntercepted</span>(throwable: <span class="ty">Throwable</span>, thread: <span class="ty">Thread</span>): <span class="ty">Boolean</span> {
+        <span class="cm">// Return true = you handled it (still forwarded to default handler)</span>
+        <span class="cm">// Return false = CrashGuard proceeds normally</span>
+        <span class="kw">if</span> (throwable <span class="kw">is</span> <span class="ty">SocketTimeoutException</span>) {
+            <span class="fn">showNetworkErrorDialog</span>()
+            <span class="kw">return true</span>
+        }
+        <span class="kw">return false</span>
+    }
+}</pre>
+  </section>
+
+  <!-- ─── EXCLUDE ───────────────────────────────────────────────────── -->
+  <section id="exclude">
+    <h2>Excluding Exceptions</h2>
+    <p>
+      Use <code>excludeException()</code> to bypass CrashGuard for specific types. The exception is
+      forwarded directly to the system's default uncaught-exception handler.
+    </p>
+
+    <pre><span class="lang-tag">kotlin</span><span class="ty">CrashGuardConfig</span>.<span class="ty">Builder</span>(<span class="kw">this</span>)
+    .<span class="fn">excludeException</span>(<span class="ty">CancellationException</span>::<span class="kw">class</span>)
+    .<span class="fn">excludeException</span>(<span class="ty">InterruptedException</span>::<span class="kw">class</span>)
+    .<span class="fn">build</span>()</pre>
+  </section>
+
+  <!-- ─── CRASH SCREENS ─────────────────────────────────────────────── -->
+  <section id="screens">
+    <h2>Built-in Crash Screens</h2>
+    <p>CrashGuard ships two screens out of the box, selected automatically by <code>debugMode</code>:</p>
+
+    <table>
+      <tr><th>Screen</th><th>When shown</th><th>Content</th></tr>
+      <tr>
+        <td><strong>UserCrashActivity</strong></td>
+        <td><code>debugMode = false</code> (release)</td>
+        <td>Friendly error message, timestamp, Restart / Close buttons.</td>
+      </tr>
+      <tr>
+        <td><strong>DeveloperCrashActivity</strong></td>
+        <td><code>debugMode = true</code> (debug)</td>
+        <td>Exception type, full stack trace, device info, memory, battery, custom data. Copy / Share buttons.</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- ─── CUSTOM SCREEN ─────────────────────────────────────────────── -->
+  <section id="custom-screen">
+    <h2>Custom Crash Screen</h2>
+    <p>
+      Replace either built-in screen with your own <code>AppCompatActivity</code>. The crash data is
+      delivered via the activity's <code>Intent</code> extra.
+    </p>
+
+    <h3>1 — Create the Activity</h3>
+    <pre><span class="lang-tag">kotlin</span><span class="kw">class</span> <span class="ty">MyCrashActivity</span> : <span class="ty">AppCompatActivity</span>() {
+
+    <span class="kw">override fun</span> <span class="fn">onCreate</span>(savedInstanceState: <span class="ty">Bundle</span>?) {
+        <span class="kw">super</span>.<span class="fn">onCreate</span>(savedInstanceState)
+
+        <span class="cm">// Retrieve crash data from the Intent extra</span>
+        <span class="kw">val</span> crashData = <span class="kw">if</span> (<span class="ty">Build</span>.<span class="ty">VERSION</span>.SDK_INT >= <span class="ty">Build</span>.<span class="ty">VERSION_CODES</span>.TIRAMISU) {
+            intent.<span class="fn">getSerializableExtra</span>(
+                <span class="ty">CrashGuardConstants</span>.EXTRA_CRASH_DATA,
+                <span class="ty">CrashData</span>::<span class="kw">class</span>.java
+            )
+        } <span class="kw">else</span> {
+            <span class="pl">@Suppress</span>(<span class="str">"DEPRECATION"</span>)
+            intent.<span class="fn">getSerializableExtra</span>(<span class="ty">CrashGuardConstants</span>.EXTRA_CRASH_DATA) <span class="kw">as</span>? <span class="ty">CrashData</span>
+        }
+
+        <span class="fn">setContentView</span>(R.layout.activity_my_crash)
+        <span class="fn">findViewById</span>&lt;<span class="ty">TextView</span>&gt;(R.id.tv_error).<span class="fn">text</span> = crashData?.exceptionMessage
+    }
+}</pre>
+
+    <h3>2 — Register in the Builder</h3>
+    <pre><span class="lang-tag">kotlin</span><span class="ty">CrashGuardConfig</span>.<span class="ty">Builder</span>(<span class="kw">this</span>)
+    .<span class="fn">customUserActivity</span>(<span class="ty">MyCrashActivity</span>::<span class="kw">class</span>)      <span class="cm">// for release</span>
+    .<span class="fn">customDeveloperActivity</span>(<span class="ty">MyDevActivity</span>::<span class="kw">class</span>)  <span class="cm">// for debug</span>
+    .<span class="fn">build</span>()</pre>
+
+    <h3>3 — Declare in AndroidManifest</h3>
+    <pre><span class="lang-tag">xml</span>&lt;<span class="kw">activity</span>
+    <span class="pl">android:name</span>=<span class="str">".MyCrashActivity"</span>
+    <span class="pl">android:exported</span>=<span class="str">"false"</span> /&gt;</pre>
+  </section>
+
+  <!-- ─── CRASH HISTORY ─────────────────────────────────────────────── -->
+  <section id="history">
+    <h2>Crash History</h2>
+    <p>
+      When <code>enableLogging(true)</code> (default), every crash is persisted to
+      <code>filesDir/crash_logs/</code>. Query stored crashes using the repository directly:
+    </p>
+
+    <pre><span class="lang-tag">kotlin</span><span class="cm">// Build the same storage/repository CrashGuard uses internally</span>
+<span class="kw">val</span> storage    = <span class="ty">CrashLogStorage</span>(context, <span class="ty">CrashGuard</span>.<span class="fn">getConfig</span>())
+<span class="kw">val</span> repository = <span class="ty">CrashRepositoryImpl</span>(storage)
+
+<span class="cm">// Retrieve crashes via use cases</span>
+<span class="kw">val</span> allCrashesUseCase = <span class="ty">GetAllCrashesUseCase</span>(repository)
+<span class="kw">val</span> countUseCase      = <span class="ty">GetCrashCountUseCase</span>(repository)
+<span class="kw">val</span> deleteAllUseCase  = <span class="ty">DeleteAllCrashesUseCase</span>(repository)
+
+lifecycleScope.<span class="fn">launch</span> {
+    <span class="kw">val</span> crashes = allCrashesUseCase.<span class="fn">execute</span>().<span class="fn">getOrElse</span> { emptyList() }
+    crashes.<span class="fn">forEach</span> { crash ->
+        <span class="ty">Log</span>.<span class="fn">d</span>(<span class="str">"Crashes"</span>, crash.<span class="fn">getFullReport</span>())
+    }
+
+    <span class="kw">val</span> count = countUseCase.<span class="fn">execute</span>().<span class="fn">getOrDefault</span>(<span class="nu">0</span>)
+    <span class="ty">Log</span>.<span class="fn">d</span>(<span class="str">"Crashes"</span>, <span class="str">"Total stored: $count"</span>)
+
+    <span class="cm">// Delete a specific crash</span>
+    <span class="ty">DeleteCrashUseCase</span>(repository).<span class="fn">execute</span>(crashes.<span class="fn">first</span>().<span class="fn">id</span>)
+
+    <span class="cm">// Wipe all</span>
+    deleteAllUseCase.<span class="fn">execute</span>()
+}</pre>
+
+    <h3>Export</h3>
+    <pre><span class="lang-tag">kotlin</span><span class="cm">// Export all crashes as a JSON string</span>
+<span class="kw">val</span> json = storage.<span class="fn">exportCrashesAsJson</span>()
+
+<span class="cm">// Export a single crash as a .txt file shared to external storage</span>
+<span class="kw">val</span> file = storage.<span class="fn">exportCrashAsText</span>(crashData)
+<span class="ty">Log</span>.<span class="fn">d</span>(<span class="str">"Export"</span>, <span class="str">"Saved to: ${file.absolutePath}"</span>)</pre>
+  </section>
+
+  <!-- ─── ANALYTICS ─────────────────────────────────────────────────── -->
+  <section id="analytics">
+    <h2>Analytics Integration</h2>
+    <p>Implement <code>AnalyticsProvider</code> to forward crash events to any backend:</p>
+
+    <pre><span class="lang-tag">kotlin</span><span class="kw">class</span> <span class="ty">FirebaseAnalyticsProvider</span> : <span class="ty">AnalyticsProvider</span> {
+
+    <span class="kw">override fun</span> <span class="fn">logCrash</span>(crashData: <span class="ty">CrashData</span>) {
+        <span class="ty">FirebaseCrashlytics</span>.<span class="fn">getInstance</span>().<span class="fn">apply</span> {
+            <span class="fn">setCustomKey</span>(<span class="str">"crash_id"</span>, crashData.id)
+            <span class="fn">setCustomKey</span>(<span class="str">"thread"</span>,   crashData.threadName)
+            <span class="fn">recordException</span>(crashData.exception ?: <span class="ty">RuntimeException</span>(crashData.exceptionMessage))
+        }
+    }
+
+    <span class="kw">override fun</span> <span class="fn">logEvent</span>(eventName: <span class="ty">String</span>, params: <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Any</span>&gt;) {
+        <span class="kw">val</span> bundle = <span class="ty">Bundle</span>()
+        params.<span class="fn">forEach</span> { (k, v) -> bundle.<span class="fn">putString</span>(k, v.<span class="fn">toString</span>()) }
+        <span class="ty">Firebase</span>.<span class="fn">analytics</span>.<span class="fn">logEvent</span>(eventName, bundle)
+    }
+}
+
+<span class="cm">// Register in config:</span>
+<span class="ty">CrashGuardConfig</span>.<span class="ty">Builder</span>(<span class="kw">this</span>)
+    .<span class="fn">enableAnalytics</span>(<span class="kw">true</span>, provider = <span class="ty">FirebaseAnalyticsProvider</span>())
+    .<span class="fn">build</span>()</pre>
+  </section>
+
+  <!-- ─── CUSTOM DATA ───────────────────────────────────────────────── -->
+  <section id="secure">
+    <h2>Custom Data &amp; Secure Mode</h2>
+
+    <h3>Custom Data Provider</h3>
+    <p>Attach extra context to every crash report — user ID, feature flags, network state, etc.:</p>
+
+    <pre><span class="lang-tag">kotlin</span><span class="kw">class</span> <span class="ty">AppContextProvider</span> : <span class="ty">CustomDataProvider</span> {
+    <span class="kw">override fun</span> <span class="fn">provideCustomData</span>(context: <span class="ty">Context</span>): <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">String</span>&gt; = <span class="fn">mapOf</span>(
+        <span class="str">"user_id"</span>       to <span class="ty">Session</span>.userId,
+        <span class="str">"feature_flags"</span> to <span class="ty">FeatureFlags</span>.<span class="fn">dump</span>(),
+        <span class="str">"build_flavor"</span>  to <span class="ty">BuildConfig</span>.FLAVOR
+    )
+}</pre>
+
+    <h3>Secure Mode</h3>
+    <p>
+      When <code>enableSecureMode(true)</code>, CrashGuard automatically scrubs the following patterns
+      from all string fields in the crash report:
+    </p>
+    <ul>
+      <li><strong>Email addresses</strong> → <code>[EMAIL]</code></li>
+      <li><strong>Credit/debit card numbers</strong> (16-digit groups) → <code>[CARD]</code></li>
+      <li><strong>Social Security Numbers</strong> (US format) → <code>[SSN]</code></li>
+      <li><strong>Phone numbers</strong> (E.164 and NANP) → <code>[PHONE]</code></li>
+    </ul>
+  </section>
+
+  <!-- ─── TESTING ───────────────────────────────────────────────────── -->
+  <section id="testing">
+    <h2>Testing</h2>
+
+    <h3>Simulating a Crash</h3>
+    <pre><span class="lang-tag">kotlin</span><span class="cm">// Dispatches through the installed UncaughtExceptionHandler —</span>
+<span class="cm">// the full crash flow (save → screen → terminate) runs.</span>
+<span class="ty">CrashGuard</span>.<span class="fn">triggerCrash</span>(<span class="ty">RuntimeException</span>(<span class="str">"Test crash"</span>))</pre>
+
+    <h3>Unit Testing</h3>
+    <p><code>CrashGuard.uninstall()</code> resets all state between tests:</p>
+    <pre><span class="lang-tag">kotlin</span><span class="pl">@Before</span>
+<span class="kw">fun</span> <span class="fn">setUp</span>() {
+    <span class="ty">CrashGuard</span>.<span class="fn">uninstall</span>()           <span class="cm">// reset if a previous test called install()</span>
+    <span class="ty">CrashGuard</span>.<span class="fn">install</span>(mockApplication, testConfig)
+}
+
+<span class="pl">@After</span>
+<span class="kw">fun</span> <span class="fn">tearDown</span>() {
+    <span class="ty">CrashGuard</span>.<span class="fn">uninstall</span>()
+}</pre>
+  </section>
+
+  <!-- ─── PROGUARD ──────────────────────────────────────────────────── -->
+  <section id="proguard">
+    <h2>ProGuard / R8</h2>
+    <p>
+      CrashGuard ships with <strong>consumer ProGuard rules</strong> that are applied automatically
+      to any app that depends on the library — you don't need to add anything to your own
+      <code>proguard-rules.pro</code>.
+    </p>
+    <p>The bundled rules:</p>
+    <ul>
+      <li>Keep all <strong>Serializable domain model classes</strong> (<code>CrashData</code>, <code>DeviceInfo</code>)
+          with original class names and non-transient fields, preventing
+          <code>InvalidClassException</code> between builds.</li>
+      <li>Keep the <strong>public CrashGuard API</strong> surface for apps using R8 full mode.</li>
+    </ul>
+    <pre><span class="lang-tag">proguard</span><span class="cm"># (Auto-included — excerpt from crash-guard's consumer-rules.pro)</span>
+-keep class io.github.alimsrepo.crashguard.domain.model.** implements java.io.Serializable {
+    !static !transient &lt;fields&gt;;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+}
+-keep public class io.github.alimsrepo.crashguard.CrashGuard { public *; }
+-keep public class io.github.alimsrepo.crashguard.domain.config.** { public *; }</pre>
+  </section>
+
+  <!-- ─── CRASHDATA REFERENCE ───────────────────────────────────────── -->
+  <section id="crashdata">
+    <h2>CrashData Reference</h2>
+    <p>Every crash report is an instance of <code>CrashData</code>, which is fully serializable and queryable after the fact.</p>
+    <table>
+      <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+      <tr><td><code>id</code></td><td>String</td><td>UUID uniquely identifying this crash.</td></tr>
+      <tr><td><code>timestamp</code></td><td>Long</td><td>Unix epoch ms when the crash occurred.</td></tr>
+      <tr><td><code>exceptionType</code></td><td>String</td><td>Fully-qualified class name of the exception.</td></tr>
+      <tr><td><code>exceptionMessage</code></td><td>String</td><td>Message from the exception (or "No message").</td></tr>
+      <tr><td><code>stackTrace</code></td><td>String</td><td>Full formatted stack trace string.</td></tr>
+      <tr><td><code>threadName</code></td><td>String</td><td>Name of the thread that threw the exception.</td></tr>
+      <tr><td><code>appVersion</code></td><td>String</td><td>App version name at crash time.</td></tr>
+      <tr><td><code>appPackage</code></td><td>String</td><td>Application package name.</td></tr>
+      <tr><td><code>deviceInfo</code></td><td>DeviceInfo</td><td>Manufacturer, model, Android version, CPU ABI, screen resolution/density.</td></tr>
+      <tr><td><code>availableMemory</code></td><td>Long</td><td>Available RAM in bytes.</td></tr>
+      <tr><td><code>totalMemory</code></td><td>Long</td><td>Total device RAM in bytes.</td></tr>
+      <tr><td><code>diskSpace</code></td><td>Long</td><td>Free disk space (filesDir) in bytes.</td></tr>
+      <tr><td><code>batteryLevel</code></td><td>Float</td><td>Battery charge level 0.0–1.0.</td></tr>
+      <tr><td><code>isCharging</code></td><td>Boolean</td><td>Whether the device was charging at crash time.</td></tr>
+      <tr><td><code>networkType</code></td><td>String</td><td>"WiFi" / "Cellular" / "Ethernet" / "No Connection" / "Unknown".</td></tr>
+      <tr><td><code>orientation</code></td><td>String</td><td>"Portrait" / "Landscape" / "Unknown".</td></tr>
+      <tr><td><code>activityStack</code></td><td>List&lt;String&gt;</td><td>Activity class names in the back-stack at crash time.</td></tr>
+      <tr><td><code>customData</code></td><td>Map&lt;String, String&gt;</td><td>Key-value pairs from your <code>CustomDataProvider</code>.</td></tr>
+      <tr><td><code>formattedTimestamp</code></td><td>String</td><td>Human-readable date/time: <em>yyyy-MM-dd HH:mm:ss.SSS</em>.</td></tr>
+      <tr><td><code>shortTimestamp</code></td><td>String</td><td>Compact form: <em>MMM dd, HH:mm</em>.</td></tr>
+      <tr><td><code>getFullReport()</code></td><td>String</td><td>Complete formatted report with all fields.</td></tr>
+      <tr><td><code>toJson()</code></td><td>String</td><td>All fields as a valid JSON object string.</td></tr>
+    </table>
+  </section>
+
+  <!-- ─── LICENSE ───────────────────────────────────────────────────── -->
+  <section id="license">
+    <h2>License</h2>
+    <p>CrashGuard is released under the <strong>Apache License 2.0</strong>.</p>
+    <pre><span class="lang-tag">text</span>Copyright 2025 Alim Sourav
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</pre>
+  </section>
+
+  <footer>
+    <p>Made with ❤️ by <a href="https://github.com/Alims-Repo">Alim Sourav</a> ·
+    <a href="https://github.com/Alims-Repo/crash-guard">GitHub</a> ·
+    <a href="https://central.sonatype.com/artifact/io.github.alims-repo/crash-guard">Maven Central</a></p>
+  </footer>
+
+</main>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('section[id], div[id]');
+  const navLinks  = document.querySelectorAll('nav a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const link = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
+
